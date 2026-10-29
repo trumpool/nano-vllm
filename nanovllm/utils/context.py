@@ -1,3 +1,19 @@
+# =============================================================================
+# context.py —— 用一个全局变量，把"这一步的 attention 元数据"传给模型深处的每一层
+#
+# 为什么要这样：attention 层需要 cu_seqlens、slot_mapping、block_tables 这些信息，
+# 但它们和模型结构无关。如果作为参数一层层传（model → layer → attention），每个 forward 的签名都要改。
+# 所以 model_runner 在每一步开始时 set_context(...)，attention 层里 get_context() 直接取，
+# 这一步跑完 reset_context()。vLLM 里也有类似的 "forward context" 机制。
+#
+# 字段：
+#   is_prefill     这一步是 prefill 还是 decode
+#   cu_seqlens_q/k prefill 用：各序列 query / key 的起止位置（前缀和），varlen attention 需要
+#   max_seqlen_q/k prefill 用：最长序列的长度
+#   slot_mapping   每个新 token 的 K/V 写到 KV cache 的哪个位置
+#   context_lens   decode 用：每个序列当前总长度
+#   block_tables   每个序列的 KV 在哪些 block 里（decode 一定有；prefill 只在有 prefix cache 时有）
+# =============================================================================
 from dataclasses import dataclass
 import torch
 
