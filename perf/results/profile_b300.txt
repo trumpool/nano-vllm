@@ -1,0 +1,28 @@
+[rank0]:W1031 21:30:04.464000 6906 torch/_dynamo/convert_frame.py:1016] [0/8] torch._dynamo hit config.recompile_limit (8)
+[rank0]:W1031 21:30:04.464000 6906 torch/_dynamo/convert_frame.py:1016] [0/8]    function: 'rms_forward' (/home/wan/nano-vllm-perf/nanovllm/layers/layernorm.py:16)
+[rank0]:W1031 21:30:04.464000 6906 torch/_dynamo/convert_frame.py:1016] [0/8]    last reason: 0/7: tensor 'x' rank mismatch. expected 2, actual 3
+[rank0]:W1031 21:30:04.464000 6906 torch/_dynamo/convert_frame.py:1016] [0/8] To log all recompilation reasons, use TORCH_LOGS="recompiles".
+[rank0]:W1031 21:30:04.464000 6906 torch/_dynamo/convert_frame.py:1016] [0/8] To diagnose recompilation issues, see https://pytorch.org/docs/main/torch.compiler_troubleshooting.html.
+=== nano-vllm profile: 256 seqs, 142827 prompt + 133966 output tokens ===
+throughput          4126.7 tok/s   (32.46 s; bench.py baseline 4543 tok/s)
+KV cache          300 blocks x 256 = 76800 tokens (all seqs at once would need 1206 blocks)
+--- where the time goes (2588 steps, 32.38 s inside step()) ---
+prefill  steps   163  time   5.57 s  17.2%  | GPU  98.2%  schedule   0.2%  prepare   1.0%  postprocess   0.1%
+decode   steps  2425  time  26.81 s  82.8%  | GPU  96.2%  schedule   0.3%  prepare   1.8%  postprocess   0.2%
+all      GPU busy 31.27 s  96.6%;  GPU idle (CPU-only work) 1.11 s   3.4%
+--- decode batch size ---
+mean 55.1   p10 4   p50 69   p90 84   max 113
+  bs range  steps  tokens  ms/step    tok/s
+   1-8        420    1372     3.71      881
+   9-32       256    4980     6.89     2825
+  33-64       290   14710    11.07     4583
+  65-96      1367  102798    13.96     5385
+  97-128       92    9695    12.95     8137
+fit (GPU time): 2.56 ms + -2.1 us/seq + 164.80 ns/context token -> KV read at 696 GB/s; KV reads = 77% of decode GPU time
+--- KV capacity ---
+preemptions             155 (90 distinct seqs)
+KV tokens thrown away   89124
+recomputed prefill      57791 tokens (+31488 recovered from prefix cache) =  28.8% of all prefill tokens
+KV blocks in use        mean 73.8% during decode
+decode stalled by prefill  11854 seq-steps (running seqs that did not advance during a prefill step)
+per-step records -> perf/results/steps_b300.json
