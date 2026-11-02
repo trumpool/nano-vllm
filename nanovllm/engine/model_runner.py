@@ -1,3 +1,4 @@
+import json
 import pickle
 import torch
 import torch.distributed as dist
@@ -155,14 +156,24 @@ class ModelRunner:
         config.num_kvcache_blocks = int(total * config.gpu_memory_utilization - used - peak + current) // block_bytes
         assert config.num_kvcache_blocks > 0
         self.kv_cache = torch.empty(2, hf_config.num_hidden_layers, config.num_kvcache_blocks, self.block_size, num_kv_heads, head_dim, dtype=self.kv_dtype)
+        k_scales, v_scales = self.kv_cache_scales()
         layer_id = 0
         for module in self.model.modules():
             if hasattr(module, "k_cache") and hasattr(module, "v_cache"):
                 module.k_cache = self.kv_cache[0, layer_id]
                 module.v_cache = self.kv_cache[1, layer_id]
                 if self.use_fp8:
-                    module.k_scale, module.v_scale = config.kv_cache_scales
+                    module.k_scale, module.v_scale = k_scales[layer_id], v_scales[layer_id]
                 layer_id += 1
+
+    def kv_cache_scales(self):
+        scales, num_layers = self.config.kv_cache_scales, self.config.hf_config.num_hidden_layers
+        if isinstance(scales, str):    # per layer, from perf/calibrate_kv_scales.py
+            with open(scales) as f:
+                scales = json.load(f)
+            assert len(scales["k_scale"]) == len(scales["v_scale"]) == num_layers
+            return scales["k_scale"], scales["v_scale"]
+        return [scales[0]] * num_layers, [scales[1]] * num_layers
 
     def prepare_block_tables(self, seqs: list[Sequence]):
         max_len = max(len(seq.block_table) for seq in seqs)

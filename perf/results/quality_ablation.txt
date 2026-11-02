@@ -1,0 +1,40 @@
+perf/eval_kv_quality.py: 16 texts x 1536 tokens (2 prefill chunks of 256, then 1024 teacher-forced decode positions).
+Texts are the venv's largest METADATA files, so they depend on what is installed (these: torch 2.8, flashinfer 0.7.1,
+pytest, matplotlib, ...); compare runs from the same venv only. 2026-11-02, RTX 5070 Ti.
+
+bf16 on this branch vs upstream main: identical (NLL diff 0.0000, argmax agreement 100.00%).
+fp8 prefix-cache prefill, old dequantize-into-bf16 + flash-attn path vs FlashInfer paged prefill:
+q_fp8_dequant.pt         mean NLL 1.9843   ppl 7.274
+q_fp8.pt                 mean NLL 1.9842   ppl 7.273
+NLL difference          mean -0.0001   mean |diff| 0.0603   max |diff| 1.775
+argmax agreement        97.05% of 16384 positions
+
+#### fp8 KV cache, scales (1, 1) for all layers
+q_bf16.pt                mean NLL 1.9707   ppl 7.176
+q_fp8_s11.pt             mean NLL 1.9830   ppl 7.265
+NLL difference          mean +0.0123   mean |diff| 0.1009   max |diff| 2.939
+argmax agreement        95.08% of 16384 positions
+  positions    0- 255: NLL diff +0.0090, argmax agreement 95.63%
+  positions  256- 511: NLL diff +0.0103, argmax agreement 95.07%
+  positions  512- 767: NLL diff +0.0156, argmax agreement 94.53%
+  positions  768-1023: NLL diff +0.0143, argmax agreement 95.09%
+
+#### fp8 KV cache, scales (2, 1) for all layers (default)
+q_bf16.pt                mean NLL 1.9707   ppl 7.176
+q_fp8.pt                 mean NLL 1.9842   ppl 7.273
+NLL difference          mean +0.0135   mean |diff| 0.1020   max |diff| 3.328
+argmax agreement        95.23% of 16384 positions
+  positions    0- 255: NLL diff +0.0108, argmax agreement 95.75%
+  positions  256- 511: NLL diff +0.0109, argmax agreement 95.00%
+  positions  512- 767: NLL diff +0.0161, argmax agreement 94.95%
+  positions  768-1023: NLL diff +0.0162, argmax agreement 95.24%
+
+#### fp8 KV cache, per-layer scales, perf/calibrate_kv_scales.py
+q_bf16.pt                mean NLL 1.9707   ppl 7.176
+q_fp8_calib.pt           mean NLL 1.9700   ppl 7.171
+NLL difference          mean -0.0007   mean |diff| 0.0980   max |diff| 5.257
+argmax agreement        95.36% of 16384 positions
+  positions    0- 255: NLL diff -0.0037, argmax agreement 95.36%
+  positions  256- 511: NLL diff +0.0061, argmax agreement 95.17%
+  positions  512- 767: NLL diff -0.0047, argmax agreement 95.26%
+  positions  768-1023: NLL diff -0.0004, argmax agreement 95.65%
