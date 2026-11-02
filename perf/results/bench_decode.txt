@@ -1,0 +1,23 @@
+415 KV blocks; 112 KiB of KV per token over 28 layers
+  bs   ctx | attn/layer        BW |  attn x L     step  share |   tok/s
+  16   256 |     18.7us    899GB/s |    0.52ms   3.65ms    14% |    4389
+  16   512 |     76.6us    438GB/s |    2.15ms   4.15ms    52% |    3856
+  16  1024 |     87.1us    771GB/s |    2.44ms   5.42ms    45% |    2949
+  16  2048 |    168.9us    795GB/s |    4.73ms   7.63ms    62% |    2097
+  32   256 |     70.0us    479GB/s |    1.96ms   3.87ms    51% |    8277
+  32   512 |     96.3us    697GB/s |    2.70ms   5.27ms    51% |    6067
+  32  1024 |    173.6us    773GB/s |    4.86ms   7.46ms    65% |    4292
+  32  2048 |    331.0us    811GB/s |    9.27ms  12.11ms    77% |    2642
+  64   256 |     99.0us    678GB/s |    2.77ms   5.88ms    47% |   10884
+  64   512 |    177.4us    756GB/s |    4.97ms   8.23ms    60% |    7778
+  64  1024 |    338.8us    792GB/s |    9.49ms  13.04ms    73% |    4908
+  64  2048 |    645.6us    832GB/s*|   18.08ms  21.62ms    84% |    2960
+ 128   256 |    178.4us    753GB/s |    4.99ms   8.33ms    60% |   15361
+ 128   512 |    325.8us    824GB/s |    9.12ms  13.12ms    70% |    9755
+ 128  1024 |    602.0us    892GB/s*|   16.86ms  20.97ms    80% |    6104
+ 128  2048 |   1021.0us   1052GB/s*|   28.59ms  32.70ms    87% |    3914
+ 256   256 |    340.8us    788GB/s |    9.54ms  14.96ms    64% |   17107
+ 256   512 |    606.2us    886GB/s*|   16.97ms  23.67ms    72% |   10818
+ 256  1024 |   1036.0us   1036GB/s*|   29.01ms  35.48ms    82% |    7215
+ 256  2048 |   1889.3us   1137GB/s*|   52.90ms  58.62ms    90% |    4367
+* more block references than blocks: sequences share blocks, and concurrently running ones can hit in L2, so time is underestimated

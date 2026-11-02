@@ -1,0 +1,53 @@
+flashinfer 0.7.1, torch 2.14.1+cu130, NVIDIA GeForce RTX 5070 Ti
+  bs   ctx |         kernel      time        BW  %peak | speedup  max err
+2026-11-01 23:00:56,815 - INFO - core.py:594 - flashinfer.jit: Building JIT module batch_prefill_with_kv_cache_dtype_q_bf16_dtype_kv_bf16_dtype_o_bf16_dtype_idx_i32_head_dim_qk_128_head_dim_vo_128_posenc_0_use_swa_False_use_logits_cap_False_f16qk_False_kv_stride_equal; this can take several minutes on first use.
+2026-11-01 23:01:14,299 - INFO - core.py:594 - flashinfer.jit: Building JIT module batch_decode_with_kv_cache_dtype_q_bf16_dtype_kv_e4m3_dtype_o_bf16_dtype_idx_i32_head_dim_qk_128_head_dim_vo_128_posenc_0_use_swa_False_use_logits_cap_False; this can take several minutes on first use.
+2026-11-01 23:01:22,792 - INFO - core.py:594 - flashinfer.jit: Building JIT module batch_prefill_with_kv_cache_dtype_q_bf16_dtype_kv_e4m3_dtype_o_bf16_dtype_idx_i32_head_dim_qk_128_head_dim_vo_128_posenc_0_use_swa_False_use_logits_cap_False_f16qk_False_kv_stride_equal; this can take several minutes on first use.
+  32   512 |           bf16    91.0us    737GB/s    82% |   1.00x   0.0000
+  32   512 |        bf16 tc    85.8us    783GB/s    87% |   1.06x   0.0020
+  32   512 |            fp8    33.2us   1012GB/s   113% |   2.75x   0.0293
+  32   512 |         fp8 tc    30.2us   1111GB/s   124% |   3.02x   0.0293
+  32  1024 |           bf16   170.7us    786GB/s    88% |   1.00x   0.0000
+  32  1024 |        bf16 tc   169.6us    791GB/s    88% |   1.01x   0.0010
+  32  1024 |            fp8    92.4us    726GB/s    81% |   1.85x   0.0112
+  32  1024 |         fp8 tc    92.8us    723GB/s    81% |   1.84x   0.0112
+  32  2048 |           bf16   336.5us    798GB/s    89% |   1.00x   0.0000
+  32  2048 |        bf16 tc   332.0us    808GB/s    90% |   1.01x   0.0010
+  32  2048 |            fp8   171.5us    783GB/s    87% |   1.96x   0.0107
+  32  2048 |         fp8 tc   176.5us    760GB/s    85% |   1.91x   0.0107
+  64   512 |           bf16   167.0us    804GB/s    90% |   1.00x   0.0000
+  64   512 |        bf16 tc   170.3us    788GB/s    88% |   0.98x   0.0020
+  64   512 |            fp8   119.6us    561GB/s    63% |   1.40x   0.0234
+  64   512 |         fp8 tc    90.8us    739GB/s    82% |   1.84x   0.0234
+  64  1024 |           bf16   319.4us    841GB/s    94% |   1.00x   0.0000
+  64  1024 |        bf16 tc   321.2us    836GB/s    93% |   0.99x   0.0010
+  64  1024 |            fp8   194.4us    691GB/s    77% |   1.64x   0.0176
+  64  1024 |         fp8 tc   186.2us    721GB/s    80% |   1.71x   0.0176
+  64  2048 |           bf16   639.6us    839GB/s    94% |   1.00x   0.0000
+  64  2048 |        bf16 tc   646.8us    830GB/s    93% |   0.99x   0.0010
+  64  2048 |            fp8   389.1us    690GB/s    77% |   1.64x   0.0103
+  64  2048 |         fp8 tc   341.6us    786GB/s    88% |   1.87x   0.0103
+ 128   512 |           bf16   335.9us    799GB/s    89% |   1.00x   0.0000
+ 128   512 |        bf16 tc   331.0us    811GB/s    91% |   1.01x   0.0020
+ 128   512 |            fp8   187.8us    715GB/s    80% |   1.79x   0.0312
+ 128   512 |         fp8 tc   185.0us    725GB/s    81% |   1.82x   0.0312
+ 128  1024 |           bf16   664.5us    808GB/s    90% |   1.00x   0.0000
+ 128  1024 |        bf16 tc   658.8us    815GB/s    91% |   1.01x   0.0020
+ 128  1024 |            fp8   364.4us    737GB/s    82% |   1.82x   0.0171
+ 128  1024 |         fp8 tc   343.3us    782GB/s    87% |   1.94x   0.0171
+ 128  2048 |           bf16  1329.2us    808GB/s    90% |   1.00x   0.0000
+ 128  2048 |        bf16 tc  1312.6us    818GB/s    91% |   1.01x   0.0010
+ 128  2048 |            fp8   713.5us    752GB/s    84% |   1.86x   0.0244
+ 128  2048 |         fp8 tc   676.6us    793GB/s    89% |   1.96x   0.0244
+ 256   512 |           bf16   667.4us    804GB/s    90% |   1.00x   0.0000
+ 256   512 |        bf16 tc   672.0us    799GB/s    89% |   0.99x   0.0020
+ 256   512 |            fp8   353.5us    759GB/s    85% |   1.89x   0.0352
+ 256   512 |         fp8 tc   345.1us    778GB/s    87% |   1.93x   0.0352
+ 256  1024 |           bf16  1324.0us    811GB/s    91% |   1.00x   0.0000
+ 256  1024 |        bf16 tc  1306.5us    822GB/s    92% |   1.01x   0.0010
+ 256  1024 |            fp8   689.9us    778GB/s    87% |   1.92x   0.0195
+ 256  1024 |         fp8 tc   679.2us    790GB/s    88% |   1.95x   0.0195
+ 256  2048 |           bf16  2634.8us    815GB/s    91% |   1.00x   0.0000
+ 256  2048 |        bf16 tc  2545.3us    844GB/s    94% |   1.04x   0.0010
+ 256  2048 |            fp8  1331.4us    806GB/s    90% |   1.98x   0.0112
+ 256  2048 |         fp8 tc  1325.6us    810GB/s    90% |   1.99x   0.0112
