@@ -10,6 +10,24 @@
 
 A lightweight vLLM implementation built from scratch.
 
+> **This fork adds an FP8 KV cache**: `LLM(model, kv_cache_dtype="fp8")`.
+> Profiling showed decode is bound by reading the KV cache (attention is 70-80% of a decode step, already at ~90% of
+> DRAM bandwidth) and by its capacity (138 preemptions on `bench.py`). An e4m3 cache halves both problems.
+>
+> | RTX 5070 Ti, Qwen3-0.6B, `bench.py` workload | bf16 KV cache | fp8 KV cache |
+> |---|---|---|
+> | throughput (3 runs each, alternating) | 4698 tok/s | **8353 tok/s (1.78x)** |
+> | KV cache capacity | 415 blocks (106k tokens) | 811 blocks (208k tokens) |
+> | preemptions | 138 | 0 |
+> | mean decode batch | 69 | 131 |
+> | perplexity (teacher-forced, 16 x 1024 tokens) | 7.176 | 7.171 with calibrated per-layer scales (7.273 default) |
+>
+> ![throughput vs concurrent requests](perf/results/sweep.png)
+>
+> Design, measurements, correctness and quality analysis: [`docs/fp8_kv_cache.md`](docs/fp8_kv_cache.md).
+> Profiling and benchmark scripts: [`perf/`](perf). Tests: `pytest` ([`tests/`](tests)).
+> Needs `pip install flashinfer-python` (only for `kv_cache_dtype="fp8"`); the default `"auto"` is unchanged.
+
 ## Key Features
 
 * 🚀 **Fast offline inference** - Comparable inference speeds to vLLM
