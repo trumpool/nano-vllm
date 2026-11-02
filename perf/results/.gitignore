@@ -1,2 +1,4 @@
 *.json
 *.pt
+*.nsys-rep
+*.sqlite

@@ -14,3 +14,12 @@ bf16 mean 4669 tok/s, fp8 mean 8290 tok/s: 1.78x.
 
 An earlier session (fp8_cmp_*.txt) had another process on the GPU (3.7 GB in use at idle) and swung by up to 20%
 between runs (bf16 3906-4685, fp8 5558-7980).
+
+2026-11-02, after closing desktop apps (Wallpaper Engine, ToDesk, ...):
+[33, 1245 MHz, 14001 MHz, 46.53 W, 4 %, 1491 MiB] bf16 throughput          4585.6 tok/s   (29.21 s)
+[41, 2940 MHz, 14001 MHz, 67.79 W, 1 %, 1477 MiB] fp8  throughput          8111.8 tok/s   (16.51 s)
+[43, 2932 MHz, 14001 MHz, 68.40 W, 4 %, 1477 MiB] bf16 throughput          4589.6 tok/s   (29.19 s)
+[45, 2932 MHz, 14001 MHz, 81.60 W, 3 %, 1478 MiB] fp8  throughput          8099.8 tok/s   (16.54 s)
+[46, 2932 MHz, 14001 MHz, 69.43 W, 3 %, 1509 MiB] bf16 throughput          4355.4 tok/s   (30.76 s)
+[47, 2932 MHz, 14001 MHz, 87.33 W, 6 %, 1638 MiB] fp8  throughput          7674.0 tok/s   (17.46 s)
+Absolute numbers move by up to ~5% between runs; the fp8/bf16 ratio of back-to-back pairs stays at 1.76-1.77.
