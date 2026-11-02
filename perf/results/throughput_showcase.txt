@@ -1,0 +1,6 @@
+[34, 412 MHz, 14001 MHz, 40.63 W, 1 %, 1995 MiB] auto throughput          4699.7 tok/s   (28.51 s; bench.py baseline 4543 tok/s)
+[42, 2932 MHz, 14001 MHz, 68.00 W, 1 %, 1765 MiB] fp8 throughput          8396.4 tok/s   (15.96 s; bench.py baseline 4543 tok/s)
+[44, 2932 MHz, 14001 MHz, 68.28 W, 1 %, 1765 MiB] auto throughput          4675.3 tok/s   (28.65 s; bench.py baseline 4543 tok/s)
+[46, 2932 MHz, 14001 MHz, 68.58 W, 1 %, 1765 MiB] fp8 throughput          8346.9 tok/s   (16.05 s; bench.py baseline 4543 tok/s)
+[46, 2932 MHz, 14001 MHz, 69.04 W, 1 %, 1767 MiB] auto throughput          4717.8 tok/s   (28.40 s; bench.py baseline 4543 tok/s)
+[47, 2932 MHz, 14001 MHz, 79.10 W, 1 %, 1771 MiB] fp8 throughput          8316.0 tok/s   (16.11 s; bench.py baseline 4543 tok/s)

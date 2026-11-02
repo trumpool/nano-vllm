@@ -1,0 +1,30 @@
+#### bf16: top GPU kernels (perf/nsys_profile.py: 64 seqs)
+
+ ** CUDA GPU Kernel Summary (cuda_gpu_kern_sum):
+
++----------+-----------------+-----------+----------+----------+----------+----------+-------------+----------------------------------------------------------------------------------------------------
+| Time (%) | Total Time (ns) | Instances | Avg (ns) | Med (ns) | Min (ns) | Max (ns) | StdDev (ns) |                                                 Name                                               
++----------+-----------------+-----------+----------+----------+----------+----------+-------------+----------------------------------------------------------------------------------------------------
+|     45.2 |       921013192 |      6552 | 140569.8 | 153084.0 |    51135 |   712937 |     49844.9 | void flash::flash_fwd_splitkv_kernel<Flash_fwd_kernel_traits<(int)128, (int)64, (int)128, (int)4, (
+|     20.1 |       410088116 |       480 | 854350.2 | 445105.0 |   246788 |  2395608 |    585376.5 | void cutlass::Kernel2<cutlass_80_tensorop_bf16_s16816gemm_relu_bf16_256x128_32x3_tn_align8>(T1::Par
+|      7.8 |       158200599 |     12656 |  12500.0 |  11549.0 |     6865 |   276527 |      4895.5 | void cutlass::Kernel2<cutlass_80_wmma_tensorop_bf16_s161616gemm_bf16_32x32_128x2_tn_align8>(T1::Par
+|      3.8 |        78322303 |      5376 |  14568.9 |  13313.0 |    12639 |   292918 |      5780.6 | void cutlass::Kernel2<cutlass_80_wmma_tensorop_bf16_s161616gemm_bf16_32x32_64x1_tn_align8>(T1::Para
+|      3.3 |        67680217 |      2576 |  26273.4 |  26049.0 |    25664 |   328303 |      7179.3 | void cutlass::Kernel2<cutlass_80_tensorop_bf16_s16816gemm_relu_bf16_128x128_32x4_tn_align8>(T1::Par
+|      3.3 |        66315238 |      4471 |  14832.3 |  11773.0 |    10811 |   388484 |     23988.8 | void cutlass::Kernel2<cutlass_80_wmma_tensorop_bf16_s161616gemm_bf16_16x16_128x2_tn_align8>(T1::Par
+|      2.4 |        48154264 |        84 | 573265.0 | 749027.0 |   155811 |  1003129 |    298422.0 | void flash::flash_fwd_kernel<Flash_fwd_kernel_traits<(int)128, (int)128, (int)64, (int)4, (bool)0, 
+|      1.9 |        38365742 |      1519 |  25257.2 |  16745.0 |    16072 |   583078 |     54881.3 | void cutlass::Kernel2<cutlass_80_wmma_tensorop_bf16_s161616gemm_bf16_16x16_128x1_tn_align8>(T1::Par
+#### fp8: top GPU kernels (perf/nsys_profile.py: 64 seqs)
+
+ ** CUDA GPU Kernel Summary (cuda_gpu_kern_sum):
+
++----------+-----------------+-----------+----------+----------+----------+----------+-------------+----------------------------------------------------------------------------------------------------
+| Time (%) | Total Time (ns) | Instances | Avg (ns) | Med (ns) | Min (ns) | Max (ns) | StdDev (ns) |                                                 Name                                               
++----------+-----------------+-----------+----------+----------+----------+----------+-------------+----------------------------------------------------------------------------------------------------
+|     30.8 |       485450518 |      7140 |  67990.3 |  74603.0 |     8259 |   619917 |     31689.2 | void flashinfer::BatchPrefillWithPagedKVCacheKernel<(bool)1, flashinfer::KernelTraits<(flashinfer::
+|     25.7 |       405666272 |       480 | 845138.1 | 440517.5 |   244441 |  2458957 |    583037.5 | void cutlass::Kernel2<cutlass_80_tensorop_bf16_s16816gemm_relu_bf16_256x128_32x3_tn_align8>(T1::Par
+|     10.0 |       157411649 |     12656 |  12437.7 |  11500.0 |     6830 |   208259 |      5034.0 | void cutlass::Kernel2<cutlass_80_wmma_tensorop_bf16_s161616gemm_bf16_32x32_128x2_tn_align8>(T1::Par
+|      4.8 |        76324555 |      5376 |  14197.3 |  13119.0 |    12388 |    21188 |      1989.2 | void cutlass::Kernel2<cutlass_80_wmma_tensorop_bf16_s161616gemm_bf16_32x32_64x1_tn_align8>(T1::Para
+|      4.2 |        66266619 |      2576 |  25724.6 |  25604.0 |    25349 |   212833 |      3691.7 | void cutlass::Kernel2<cutlass_80_tensorop_bf16_s16816gemm_relu_bf16_128x128_32x4_tn_align8>(T1::Par
+|      4.2 |        65901395 |      4471 |  14739.7 |  11563.0 |    10705 |   381925 |     24191.6 | void cutlass::Kernel2<cutlass_80_wmma_tensorop_bf16_s161616gemm_bf16_16x16_128x2_tn_align8>(T1::Par
+|      3.0 |        47821444 |        84 | 569302.9 | 741597.5 |   153336 |  1016772 |    297710.3 | void flash::flash_fwd_kernel<Flash_fwd_kernel_traits<(int)128, (int)128, (int)64, (int)4, (bool)0, 
+|      2.4 |        37468223 |      1519 |  24666.4 |  16454.0 |    15883 |   385165 |     53252.2 | void cutlass::Kernel2<cutlass_80_wmma_tensorop_bf16_s161616gemm_bf16_16x16_128x1_tn_align8>(T1::Par

@@ -1,0 +1,55 @@
+{
+ "kv_cache_dtype": "fp8",
+ "num_kvcache_blocks": 811,
+ "points": [
+  {
+   "num_seqs": 8,
+   "throughput": 1459.279245530192,
+   "time": 3.544900686996698,
+   "preemptions": 0,
+   "mean_decode_bs": 5.222446916076845
+  },
+  {
+   "num_seqs": 16,
+   "throughput": 2505.4566259400526,
+   "time": 3.940599050001765,
+   "preemptions": 0,
+   "mean_decode_bs": 9.93649193548387
+  },
+  {
+   "num_seqs": 32,
+   "throughput": 4006.203382885592,
+   "time": 4.534717352995358,
+   "preemptions": 0,
+   "mean_decode_bs": 18.08075772681954
+  },
+  {
+   "num_seqs": 64,
+   "throughput": 6014.63929718028,
+   "time": 6.127715757997066,
+   "preemptions": 0,
+   "mean_decode_bs": 36.68195413758724
+  },
+  {
+   "num_seqs": 128,
+   "throughput": 7773.88205730085,
+   "time": 8.885650629999873,
+   "preemptions": 0,
+   "mean_decode_bs": 68.1304347826087
+  },
+  {
+   "num_seqs": 256,
+   "throughput": 8742.818041149909,
+   "time": 16.02275139899575,
+   "preemptions": 9,
+   "mean_decode_bs": 137.48180924287118
+  },
+  {
+   "num_seqs": 512,
+   "throughput": 7884.299672240821,
+   "time": 35.50816326600034,
+   "preemptions": 279,
+   "mean_decode_bs": 144.9460020768432
+  }
+ ]
+}

@@ -2,7 +2,7 @@ perf/eval_kv_quality.py: 16 texts x 1536 tokens (2 prefill chunks of 256, then 1
 Texts are the venv's largest METADATA files, so they depend on what is installed (these: torch 2.8, flashinfer 0.7.1,
 pytest, matplotlib, ...); compare runs from the same venv only. 2026-11-02, RTX 5070 Ti.
 
-bf16 on this branch vs upstream main: identical (NLL diff 0.0000, argmax agreement 100.00%).
+bf16 on this branch vs upstream main (run from the zh-annotated branch, which only adds comments): identical (NLL diff 0.0000, argmax agreement 100.00%).
 fp8 prefix-cache prefill, old dequantize-into-bf16 + flash-attn path vs FlashInfer paged prefill:
 q_fp8_dequant.pt         mean NLL 1.9843   ppl 7.274
 q_fp8.pt                 mean NLL 1.9842   ppl 7.273
