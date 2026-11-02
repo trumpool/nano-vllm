@@ -19,9 +19,17 @@ dependencies = [
     "xxhash",
 ]
 
+[project.optional-dependencies]
+fp8 = ["flashinfer-python>=0.7"]    # kv_cache_dtype="fp8"
+test = ["pytest"]
+
 [project.urls]
 Homepage="https://github.com/GeeeekExplorer/nano-vllm"
 
 [tool.setuptools.packages.find]
 where = ["."]
 include = ["nanovllm*"]
+
+[tool.pytest.ini_options]
+pythonpath = ["."]    # test this checkout, not whichever one is pip-installed
+testpaths = ["tests"]

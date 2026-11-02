@@ -71,19 +71,15 @@ class Attention(nn.Module):
         k_cache, v_cache = self.k_cache, self.v_cache
         if k_cache.numel() and v_cache.numel():
             store_kvcache(k, v, k_cache, v_cache, context.slot_mapping, self.k_scale, self.v_scale)
-        if context.is_prefill:
+        if context.attn_wrapper is not None:    # fp8 decode / prefix-cache prefill: FlashInfer reads the fp8 cache directly
+            o = context.attn_wrapper.run(q, (k_cache, v_cache), k_scale=self.k_scale, v_scale=self.v_scale)
+        elif context.is_prefill:
             if context.block_tables is not None:    # prefix cache
-                if context.cache_block_ids is not None:    # fp8: flash-attn can't read it, dequantize the blocks in use
-                    k = k_cache[context.cache_block_ids].to(q.dtype) * self.k_scale
-                    v = v_cache[context.cache_block_ids].to(q.dtype) * self.v_scale
-                else:
-                    k, v = k_cache, v_cache
+                k, v = k_cache, v_cache
             o = flash_attn_varlen_func(q, k, v,
                                        max_seqlen_q=context.max_seqlen_q, cu_seqlens_q=context.cu_seqlens_q,
                                        max_seqlen_k=context.max_seqlen_k, cu_seqlens_k=context.cu_seqlens_k,
                                        softmax_scale=self.scale, causal=True, block_table=context.block_tables)
-        elif context.decode_wrapper is not None:    # fp8 decode: FlashInfer reads the fp8 cache directly
-            o = context.decode_wrapper.run(q, (k_cache, v_cache), k_scale=self.k_scale, v_scale=self.v_scale)
         else:    # decode
             o = flash_attn_with_kvcache(q.unsqueeze(1), k_cache, v_cache,
                                         cache_seqlens=context.context_lens, block_table=context.block_tables,
