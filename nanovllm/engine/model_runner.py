@@ -31,6 +31,13 @@ class ModelRunner:
         self.model = Qwen3ForCausalLM(hf_config)
         load_model(self.model, config.model)
         self.sampler = Sampler()
+        self.use_fp8 = config.kv_cache_dtype == "fp8"
+        self.kv_dtype = torch.float8_e4m3fn if self.use_fp8 else hf_config.dtype
+        if self.use_fp8:
+            import flashinfer
+            # allocated before warmup so that the KV cache sizing (peak memory) accounts for it
+            self.flashinfer_workspace = torch.empty(128 * 1024 * 1024, dtype=torch.uint8)
+            self.decode_wrapper = flashinfer.BatchDecodeWithPagedKVCacheWrapper(self.flashinfer_workspace, "NHD", use_tensor_cores=True)
         self.warmup_model()
         self.allocate_kv_cache()
         if not self.enforce_eager:
@@ -109,15 +116,17 @@ class ModelRunner:
         current = torch.cuda.memory_stats()["allocated_bytes.all.current"]
         num_kv_heads = hf_config.num_key_value_heads // self.world_size
         head_dim = getattr(hf_config, "head_dim", hf_config.hidden_size // hf_config.num_attention_heads)
-        block_bytes = 2 * hf_config.num_hidden_layers * self.block_size * num_kv_heads * head_dim * hf_config.dtype.itemsize
+        block_bytes = 2 * hf_config.num_hidden_layers * self.block_size * num_kv_heads * head_dim * self.kv_dtype.itemsize
         config.num_kvcache_blocks = int(total * config.gpu_memory_utilization - used - peak + current) // block_bytes
         assert config.num_kvcache_blocks > 0
-        self.kv_cache = torch.empty(2, hf_config.num_hidden_layers, config.num_kvcache_blocks, self.block_size, num_kv_heads, head_dim)
+        self.kv_cache = torch.empty(2, hf_config.num_hidden_layers, config.num_kvcache_blocks, self.block_size, num_kv_heads, head_dim, dtype=self.kv_dtype)
         layer_id = 0
         for module in self.model.modules():
             if hasattr(module, "k_cache") and hasattr(module, "v_cache"):
                 module.k_cache = self.kv_cache[0, layer_id]
                 module.v_cache = self.kv_cache[1, layer_id]
+                if self.use_fp8:
+                    module.k_scale, module.v_scale = config.kv_cache_scales
                 layer_id += 1
 
     def prepare_block_tables(self, seqs: list[Sequence]):
@@ -125,6 +134,42 @@ class ModelRunner:
         block_tables = [seq.block_table + [-1] * (max_len - len(seq.block_table)) for seq in seqs]
         block_tables = torch.tensor(block_tables, dtype=torch.int32, pin_memory=True).cuda(non_blocking=True)
         return block_tables
+
+    def prepare_dequant_block_tables(self, seqs: list[Sequence]):
+        # fp8 prefix-cache prefill: flash-attn can't read the fp8 cache, so attention dequantizes the blocks this batch
+        # reads into a temporary bf16 cache, and the block tables index into that instead
+        tables = [seq.block_table[:(seq.num_cached_tokens + seq.num_scheduled_tokens + self.block_size - 1) // self.block_size] for seq in seqs]
+        pos = {}
+        for table in tables:
+            for block_id in table:
+                pos.setdefault(block_id, len(pos))
+        max_len = max(map(len, tables))
+        block_tables = [[pos[b] for b in table] + [-1] * (max_len - len(table)) for table in tables]
+        block_tables = torch.tensor(block_tables, dtype=torch.int32, pin_memory=True).cuda(non_blocking=True)
+        cache_block_ids = torch.tensor(list(pos), dtype=torch.int64, pin_memory=True).cuda(non_blocking=True)
+        return cache_block_ids, block_tables
+
+    def plan_decode(self, wrapper, bs: int):
+        # FlashInfer's paged KV format: the block tables concatenated (indices) + offsets (indptr) + last block fill.
+        # CUDA graph padding (bs > real batch): dummy requests that read 1 token of block 0; their outputs are dropped
+        indptr, indices, last_page_len = self.decode_meta
+        pad = bs - len(last_page_len)
+        indptr = indptr + list(range(indptr[-1] + 1, indptr[-1] + 1 + pad))
+        indices = indices + [0] * pad
+        last_page_len = last_page_len + [1] * pad
+        hf_config = self.config.hf_config
+        wrapper.plan(
+            torch.tensor(indptr, dtype=torch.int32),
+            torch.tensor(indices, dtype=torch.int32, pin_memory=True).cuda(non_blocking=True),
+            torch.tensor(last_page_len, dtype=torch.int32),
+            hf_config.num_attention_heads // self.world_size,
+            hf_config.num_key_value_heads // self.world_size,
+            hf_config.head_dim,
+            self.block_size,
+            q_data_type=hf_config.dtype,
+            kv_data_type=self.kv_dtype,
+            sm_scale=hf_config.head_dim ** -0.5,
+        )
 
     def prepare_prefill(self, seqs: list[Sequence]):
         input_ids = []
@@ -135,6 +180,7 @@ class ModelRunner:
         max_seqlen_k = 0
         slot_mapping = []
         block_tables = None
+        cache_block_ids = None
         for seq in seqs:
             start = seq.num_cached_tokens
             seqlen_q = seq.num_scheduled_tokens
@@ -160,13 +206,16 @@ class ModelRunner:
                     slot_end = seq.block_table[i] * self.block_size + end - i * self.block_size
                 slot_mapping.extend(range(slot_start, slot_end))
         if cu_seqlens_k[-1] > cu_seqlens_q[-1]:    # prefix cache
-            block_tables = self.prepare_block_tables(seqs)
+            if self.use_fp8:
+                cache_block_ids, block_tables = self.prepare_dequant_block_tables(seqs)
+            else:
+                block_tables = self.prepare_block_tables(seqs)
         input_ids = torch.tensor(input_ids, dtype=torch.int64, pin_memory=True).cuda(non_blocking=True)
         positions = torch.tensor(positions, dtype=torch.int64, pin_memory=True).cuda(non_blocking=True)
         cu_seqlens_q = torch.tensor(cu_seqlens_q, dtype=torch.int32, pin_memory=True).cuda(non_blocking=True)
         cu_seqlens_k = torch.tensor(cu_seqlens_k, dtype=torch.int32, pin_memory=True).cuda(non_blocking=True)
         slot_mapping = torch.tensor(slot_mapping, dtype=torch.int32, pin_memory=True).cuda(non_blocking=True)
-        set_context(True, cu_seqlens_q, cu_seqlens_k, max_seqlen_q, max_seqlen_k, slot_mapping, None, block_tables)
+        set_context(True, cu_seqlens_q, cu_seqlens_k, max_seqlen_q, max_seqlen_k, slot_mapping, None, block_tables, cache_block_ids)
         return input_ids, positions
 
     def prepare_decode(self, seqs: list[Sequence]):
@@ -183,7 +232,16 @@ class ModelRunner:
         positions = torch.tensor(positions, dtype=torch.int64, pin_memory=True).cuda(non_blocking=True)
         slot_mapping = torch.tensor(slot_mapping, dtype=torch.int32, pin_memory=True).cuda(non_blocking=True)
         context_lens = torch.tensor(context_lens, dtype=torch.int32, pin_memory=True).cuda(non_blocking=True)
-        block_tables = self.prepare_block_tables(seqs)
+        if self.use_fp8:    # planned in run_model, once we know which wrapper (eager or which CUDA graph) runs
+            block_tables = None
+            indptr = [0]
+            indices = []
+            for seq in seqs:
+                indices.extend(seq.block_table)
+                indptr.append(len(indices))
+            self.decode_meta = (indptr, indices, [seq.last_block_num_tokens for seq in seqs])
+        else:
+            block_tables = self.prepare_block_tables(seqs)
         set_context(False, slot_mapping=slot_mapping, context_lens=context_lens, block_tables=block_tables)
         return input_ids, positions
 
@@ -195,11 +253,15 @@ class ModelRunner:
     @torch.inference_mode()
     def run_model(self, input_ids: torch.Tensor, positions: torch.Tensor, is_prefill: bool):
         if is_prefill or self.enforce_eager or input_ids.size(0) > 512:
+            if not is_prefill and self.use_fp8:
+                self.plan_decode(self.decode_wrapper, input_ids.size(0))
+                get_context().decode_wrapper = self.decode_wrapper
             return self.model.compute_logits(self.model(input_ids, positions))
         else:
             bs = input_ids.size(0)
             context = get_context()
-            graph = self.graphs[next(x for x in self.graph_bs if x >= bs)]
+            graph_bs = next(x for x in self.graph_bs if x >= bs)
+            graph = self.graphs[graph_bs]
             graph_vars = self.graph_vars
             graph_vars["input_ids"][:bs] = input_ids
             graph_vars["positions"][:bs] = positions
@@ -207,7 +269,10 @@ class ModelRunner:
             graph_vars["slot_mapping"][:bs] = context.slot_mapping
             graph_vars["context_lens"].zero_()
             graph_vars["context_lens"][:bs] = context.context_lens
-            graph_vars["block_tables"][:bs, :context.block_tables.size(1)] = context.block_tables
+            if self.use_fp8:
+                self.plan_decode(self.graph_wrappers[graph_bs], graph_bs)    # fills the wrapper's buffers the graph reads
+            else:
+                graph_vars["block_tables"][:bs, :context.block_tables.size(1)] = context.block_tables
             graph.replay()
             return self.model.compute_logits(graph_vars["outputs"][:bs])
 
@@ -234,10 +299,24 @@ class ModelRunner:
         self.graph_bs = [1, 2, 4, 8] + list(range(16, max_bs + 1, 16))
         self.graphs = {}
         self.graph_pool = None
+        self.graph_wrappers = {}
 
         for bs in reversed(self.graph_bs):
             graph = torch.cuda.CUDAGraph()
-            set_context(False, slot_mapping=slot_mapping[:bs], context_lens=context_lens[:bs], block_tables=block_tables[:bs])
+            wrapper = None
+            if self.use_fp8:
+                # one wrapper per graph: the captured kernels read its fixed-address buffers, which plan() refills
+                import flashinfer
+                wrapper = flashinfer.BatchDecodeWithPagedKVCacheWrapper(
+                    self.flashinfer_workspace, "NHD", use_cuda_graph=True, use_tensor_cores=True,
+                    paged_kv_indptr_buffer=torch.zeros(bs + 1, dtype=torch.int32),
+                    paged_kv_indices_buffer=torch.zeros(bs * max_num_blocks, dtype=torch.int32),
+                    paged_kv_last_page_len_buffer=torch.zeros(bs, dtype=torch.int32),
+                )
+                self.decode_meta = ([0], [], [])    # capture with all-padding requests
+                self.plan_decode(wrapper, bs)
+                self.graph_wrappers[bs] = wrapper
+            set_context(False, slot_mapping=slot_mapping[:bs], context_lens=context_lens[:bs], block_tables=block_tables[:bs], decode_wrapper=wrapper)
             outputs[:bs] = self.model(input_ids[:bs], positions[:bs])    # warmup
             with torch.cuda.graph(graph, self.graph_pool):
                 outputs[:bs] = self.model(input_ids[:bs], positions[:bs])    # capture
