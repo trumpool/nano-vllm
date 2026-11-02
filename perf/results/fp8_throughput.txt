@@ -1,0 +1,16 @@
+bench.py workload via perf/profile_bench.py, alternating bf16 (main) / fp8 (fp8-kv, kv_cache_dtype="fp8").
+GPU idle before each run (no other compute process), [temp C, SM clock, mem clock, power, util, mem used].
+
+[37, 780 MHz, 14001 MHz, 42.83 W, 1 %, 1280 MiB] bf16 throughput          4667.9 tok/s   (28.70 s)
+[45, 2932 MHz, 14001 MHz, 82.77 W, 1 %, 1278 MiB] fp8  throughput          8279.8 tok/s   (16.18 s)
+[46, 2932 MHz, 14001 MHz, 68.65 W, 1 %, 1279 MiB] bf16 throughput          4667.8 tok/s   (28.70 s)
+[47, 2932 MHz, 14001 MHz, 89.13 W, 1 %, 1279 MiB] fp8  throughput          8309.0 tok/s   (16.12 s)
+[47, 2932 MHz, 14001 MHz, 69.58 W, 1 %, 1279 MiB] bf16 throughput          4666.0 tok/s   (28.71 s)
+[48, 2932 MHz, 14001 MHz, 109.09 W, 0 %, 1276 MiB] fp8  throughput          8240.0 tok/s   (16.26 s)
+[47, 2932 MHz, 14001 MHz, 69.13 W, 0 %, 1276 MiB] bf16 throughput          4675.3 tok/s   (28.65 s)
+[48, 2932 MHz, 14001 MHz, 74.77 W, 1 %, 1276 MiB] fp8  throughput          8330.2 tok/s   (16.08 s)
+
+bf16 mean 4669 tok/s, fp8 mean 8290 tok/s: 1.78x.
+
+An earlier session (fp8_cmp_*.txt) had another process on the GPU (3.7 GB in use at idle) and swung by up to 20%
+between runs (bf16 3906-4685, fp8 5558-7980).

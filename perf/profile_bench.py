@@ -33,11 +33,13 @@ parser.add_argument("--blocks", type=int, default=0, help="use only this many KV
 parser.add_argument("--num-seqs", type=int, default=256)
 parser.add_argument("--json", type=str, default="", help="dump per-step records to this file")
 parser.add_argument("--model", type=str, default="~/huggingface/Qwen3-0.6B/")
+parser.add_argument("--kv-cache-dtype", type=str, default="", help="passed to LLM() if set (e.g. fp8)")
 args = parser.parse_args()
 
 # ---- workload: identical to bench.py ----
 seed(0)
-llm = LLM(os.path.expanduser(args.model), enforce_eager=False, max_model_len=4096)
+extra = dict(kv_cache_dtype=args.kv_cache_dtype) if args.kv_cache_dtype else {}
+llm = LLM(os.path.expanduser(args.model), enforce_eager=False, max_model_len=4096, **extra)
 prompt_token_ids = [[randint(0, 10000) for _ in range(randint(100, 1024))] for _ in range(args.num_seqs)]
 sampling_params = [SamplingParams(temperature=0.6, ignore_eos=True, max_tokens=randint(100, 1024)) for _ in range(args.num_seqs)]
 
@@ -196,7 +198,7 @@ X = np.array([[1, s["num_seqs"], s["kv_tokens"]] for s in dec], dtype=float)
 y = np.array([s["gpu"] for s in dec])
 (c0, c_seq, c_kv), *_ = np.linalg.lstsq(X, y, rcond=None)
 hf = llm.model_runner.config.hf_config
-kv_bytes = 2 * hf.num_hidden_layers * hf.num_key_value_heads * hf.head_dim * hf.dtype.itemsize
+kv_bytes = 2 * hf.num_hidden_layers * hf.num_key_value_heads * hf.head_dim * llm.model_runner.kv_cache.element_size()
 kv_share = c_kv * X[:, 2].sum() / y.sum()
 print(f"fit (GPU time): {1e3 * c0:.2f} ms + {1e6 * c_seq:.1f} us/seq + {1e9 * c_kv:.2f} ns/context token "
       f"-> KV read at {kv_bytes / c_kv / 1e9:.0f} GB/s; KV reads = {kv_share:.0%} of decode GPU time")

@@ -1,0 +1,23 @@
+=== nano-vllm profile: 256 seqs, 142827 prompt + 133966 output tokens ===
+throughput          3905.7 tok/s   (34.30 s; bench.py baseline 4543 tok/s)
+KV cache          415 blocks x 256 = 106240 tokens (all seqs at once would need 1206 blocks)
+--- where the time goes (2072 steps, 34.21 s inside step()) ---
+prefill  steps   134  time   4.19 s  12.3%  | GPU  97.6%  schedule   0.3%  prepare   1.3%  postprocess   0.2%
+decode   steps  1938  time  30.02 s  87.7%  | GPU  96.8%  schedule   0.2%  prepare   1.5%  postprocess   0.3%
+all      GPU busy 33.15 s  96.9%;  GPU idle (CPU-only work) 1.06 s   3.1%
+--- decode batch size ---
+mean 68.9   p10 4   p50 88   p90 119   max 158
+  bs range  steps  tokens  ms/step    tok/s
+   1-8        289     952     3.93      838
+   9-32       270    5530     7.74     2647
+  33-64       245   11589    11.78     4014
+  65-96       431   37087    17.42     4941
+  97-128      564   58822    18.22     5725
+ 129-192      139   19592    44.06     3199
+fit (GPU time): 4.66 ms + 339.3 us/seq + -209.64 ns/context token -> KV read at -547 GB/s; KV reads = -87% of decode GPU time
+--- KV capacity ---
+preemptions             138 (68 distinct seqs)
+KV tokens thrown away   90293
+recomputed prefill      59967 tokens (+30464 recovered from prefix cache) =  29.6% of all prefill tokens
+KV blocks in use        mean 66.8% during decode
+decode stalled by prefill  13315 seq-steps (running seqs that did not advance during a prefill step)

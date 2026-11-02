@@ -1,0 +1,8 @@
+quality_bf16.pt          mean NLL 2.0007   ppl 7.394
+quality_fp8.pt           mean NLL 2.0140   ppl 7.493
+NLL difference          mean +0.0133   mean |diff| 0.1015   max |diff| 2.756
+argmax agreement        95.08% of 16384 positions
+  positions    0- 255: NLL diff +0.0115, argmax agreement 95.83%
+  positions  256- 511: NLL diff +0.0089, argmax agreement 95.09%
+  positions  512- 767: NLL diff +0.0158, argmax agreement 94.38%
+  positions  768-1023: NLL diff +0.0169, argmax agreement 95.02%
