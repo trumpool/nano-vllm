@@ -29,7 +29,8 @@ def store_kvcache_kernel(
     key = tl.load(key_ptr + key_offsets)
     value = tl.load(value_ptr + value_offsets)
     if FP8:
-        # saturate: e4m3fn has no inf, so an out-of-range value would turn into NaN
+        # saturate: e4m3fn has no inf, and a PyTorch cast turns out-of-range values into NaN. Triton's cast happens to
+        # saturate already (satfinite), the clamp makes that explicit rather than an accident of the code generator
         key = tl.clamp(key.to(tl.float32) / k_scale, -448.0, 448.0)
         value = tl.clamp(value.to(tl.float32) / v_scale, -448.0, 448.0)
     cache_offsets = slot * D + tl.arange(0, D)

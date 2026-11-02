@@ -45,7 +45,7 @@ def test_fp8_store_matches_reference_quantization(k_scale, v_scale):
 
 
 def test_fp8_store_saturates_instead_of_nan():
-    # e4m3fn has no inf: a plain cast of anything past 448 gives NaN. The kernel must clamp
+    # e4m3fn has no inf: a PyTorch cast of anything past 448 gives NaN. The stored cache must saturate instead
     k, v = random_kv(16, std=1000)
     k_cache, v_cache = store(k, v, list(range(16)), torch.float8_e4m3fn)
     assert not k_cache.float().isnan().any() and not v_cache.float().isnan().any()

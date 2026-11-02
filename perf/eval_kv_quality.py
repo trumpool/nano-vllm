@@ -22,6 +22,7 @@ parser = argparse.ArgumentParser()
 parser.add_argument("--kv-cache-dtype", type=str, default="")
 parser.add_argument("--kv-cache-scales", type=str, default="",
                     help="fp8 scales: 'k,v' for all layers, or a JSON file from calibrate_kv_scales.py")
+parser.add_argument("--enforce-eager", action="store_true")
 parser.add_argument("--out", type=str)
 parser.add_argument("--compare", nargs=2)
 parser.add_argument("--num-texts", type=int, default=16)
@@ -51,7 +52,7 @@ extra = dict(kv_cache_dtype=args.kv_cache_dtype) if args.kv_cache_dtype else {}
 if args.kv_cache_scales:
     is_pair = "," in args.kv_cache_scales
     extra["kv_cache_scales"] = tuple(map(float, args.kv_cache_scales.split(","))) if is_pair else args.kv_cache_scales
-llm = LLM(os.path.expanduser("~/huggingface/Qwen3-0.6B/"), enforce_eager=False, max_model_len=4096, **extra)
+llm = LLM(os.path.expanduser("~/huggingface/Qwen3-0.6B/"), enforce_eager=args.enforce_eager, max_model_len=4096, **extra)
 runner, block_manager = llm.model_runner, llm.scheduler.block_manager
 
 files = glob.glob(os.path.join(sys.prefix, "lib", "python3*", "site-packages", "*.dist-info", "METADATA"))

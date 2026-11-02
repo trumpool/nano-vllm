@@ -33,3 +33,4 @@ include = ["nanovllm*"]
 [tool.pytest.ini_options]
 pythonpath = ["."]    # test this checkout, not whichever one is pip-installed
 testpaths = ["tests"]
+markers = ["slow: end-to-end tests that start the engine (minutes)"]
